@@ -69,25 +69,25 @@ Tail2TailItem = namedtuple('Tail2TailItem', ['relid', 'p', 'q', 'tagid'])
 
 class HandshakingTaggingEncoder:
 
-    def __init__(self, tag_mapping: TagMapping, max_sequence_length: int, **kwargs):
+    def __init__(self, tag_mapping: TagMapping, **kwargs):
         super().__init__()
         self.tag_mapping = tag_mapping
-        self.max_sequence_length = max_sequence_length
-        self.index_matrix = self._build_index_matrix()
 
-    def encode(self, instances):
+    def encode(self, instances, max_sequence_length=100, **kwargs):
+        index_matrix = self._build_index_matrix(max_sequence_length=max_sequence_length, **kwargs)
+        flatten_length = max_sequence_length * (max_sequence_length + 1) // 2
         batch_h2t_spots, batch_h2h_spots, batch_t2t_spots = [], [], []
         for instance in instances:
-            h2t_spots, h2h_spots, t2t_spots = self._get_spots(instance)
+            h2t_spots, h2h_spots, t2t_spots = self._collect_spots(instance, **kwargs)
             batch_h2t_spots.append(h2t_spots)
             batch_h2h_spots.append(h2h_spots)
             batch_t2t_spots.append(t2t_spots)
-        h2t_tagging = self._tag_head2tail(batch_h2t_spots)
-        h2h_tagging = self._tag_head2head(batch_h2h_spots)
-        t2t_tagging = self._tag_tail2tail(batch_t2t_spots)
+        h2t_tagging = self._encode_head2tail(batch_h2t_spots, index_matrix=index_matrix, sequence_length=flatten_length)
+        h2h_tagging = self._encode_head2head(batch_h2h_spots, index_matrix=index_matrix, sequence_length=flatten_length)
+        t2t_tagging = self._encode_tail2tail(batch_t2t_spots, index_matrix=index_matrix, sequence_length=flatten_length)
         return h2t_tagging, h2h_tagging, t2t_tagging
 
-    def _get_spots(self, instance):
+    def _collect_spots(self, instance, **kwargs):
         h2t_spots, h2h_spots, t2t_spots = [], [], []
         # TODO: 考虑不在relation_list中的entity
         for relation in instance['relation_list']:
@@ -117,47 +117,39 @@ class HandshakingTaggingEncoder:
 
         return h2t_spots, h2h_spots, t2t_spots
 
-    def _tag_head2tail(self, batch_h2t_spots):
-        sequence_length = self.max_sequence_length * (self.max_sequence_length + 1) // 2
+    def _encode_head2tail(self, batch_h2t_spots, index_matrix, sequence_length, **kwargs):
         batch_tagging_sequence = np.zeros([len(batch_h2t_spots), sequence_length], dtype=np.int)
         for batch_id, h2t_spots in enumerate(batch_h2t_spots):
             for item in h2t_spots:
-                # print('p: {}, q: {}'.format(item.p, item.q))
-                index = self.index_matrix[item.p][item.q]
+                index = index_matrix[item.p][item.q]
                 batch_tagging_sequence[batch_id][index] = item.tagid
         return batch_tagging_sequence
 
-    def _tag_head2head(self, batch_h2h_spots):
-        sequence_length = self.max_sequence_length * (self.max_sequence_length + 1) // 2
+    def _encode_head2head(self, batch_h2h_spots, index_matrix, sequence_length, **kwargs):
         num_relations = len(self.tag_mapping.relation2id)
         # shape (num_relations, sequence_length)
         batch_tagging_sequence = np.zeros([len(batch_h2h_spots), num_relations, sequence_length], dtype=np.int)
         for batch_id, h2h_spots in enumerate(batch_h2h_spots):
             for item in h2h_spots:
-                index = self.index_matrix[item.p][item.q]
+                index = index_matrix[item.p][item.q]
                 batch_tagging_sequence[batch_id][item.relid][index] = item.tagid
         return batch_tagging_sequence
 
-    def _tag_tail2tail(self, batch_t2t_spots):
-        sequence_length = self.max_sequence_length * (self.max_sequence_length + 1) // 2
+    def _encode_tail2tail(self, batch_t2t_spots, index_matrix, sequence_length, **kwargs):
         num_relations = len(self.tag_mapping.relation2id)
         # shape (num_relations, sequence_length)
         batch_tagging_sequence = np.zeros([len(batch_t2t_spots), num_relations, sequence_length], dtype=np.int)
         for batch_id, t2t_spots in enumerate(batch_t2t_spots):
             for item in t2t_spots:
-                index = self.index_matrix[item.p][item.q]
+                index = index_matrix[item.p][item.q]
                 batch_tagging_sequence[batch_id][item.relid][index] = item.tagid
         return batch_tagging_sequence
 
-    def _build_index_matrix(self):
+    def _build_index_matrix(self, max_sequence_length=100, **kwargs):
         # e.g [(0, 0), (0, 1), (0, 2), (1, 1), (1, 2), (2, 2)]
-        pairs = [
-            (start, end) for start in range(self.max_sequence_length) for end in list(range(self.max_sequence_length))[start:]
-        ]
+        pairs = [(i, j) for i in range(max_sequence_length) for j in list(range(max_sequence_length))[i:]]
         # shape: (max_sequence_length, max_sequence_length)
-        matrix = [
-            [0 for i in range(self.max_sequence_length)] for j in range(self.max_sequence_length)
-        ]
+        matrix = [[0 for i in range(max_sequence_length)] for j in range(max_sequence_length)]
         for index, values in enumerate(pairs):
             matrix[values[0]][values[1]] = index
         return matrix
