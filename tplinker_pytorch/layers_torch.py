@@ -22,9 +22,10 @@ class GloveEmbedding(nn.Module):
         count = 0
         for idx, token in self.vocab.items():
             if token in self.glove.dictionary:
-                matrix[idx] = self.glove.word_vectors(self.glove.dictionary[token])
+                matrix[idx] = self.glove.word_vectors[self.glove.dictionary[token]]
                 count += 1
         logging.info(f'Load {count} tokens from pretrained embedding table.')
+        matrix = torch.tensor(matrix)
         return matrix
 
     def forward(self, input_ids, **kwargs):
