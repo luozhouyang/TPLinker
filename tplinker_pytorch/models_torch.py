@@ -20,7 +20,8 @@ class TPLinkerBert(nn.Module):
             max_positions=512)
 
     def forward(self, inputs, **kwargs):
-        sequence_output = self.bert(inputs)[0]
+        input_ids, attn_mask, token_type_ids = inputs
+        sequence_output = self.bert(input_ids, attn_mask, token_type_ids)[0]
         h2t_outputs, h2h_outputs, t2t_outputs = self.tplinker(sequence_output)
         return h2t_outputs, h2h_outputs, t2t_outputs
 
@@ -46,7 +47,7 @@ class TPLinkerBiLSTM(nn.Module):
             bidirectional=True,
             batch_first=True)
         self.decoder = nn.LSTM(
-            kwargs['embedding_size'],
+            encoder_hidden_size,
             deocder_hidden_size//2,
             num_layers=1,
             bidirectional=True,
@@ -76,8 +77,11 @@ class TPLinkerBiLSTM(nn.Module):
         raise ValueError('Not enough params to build emebdding layer.')
 
     def forward(self, input_ids, **kwargs):
-        embedding = self.embedding_dropout(self.embedding(input_ids))
-        lstm_outputs = self.lstm_dropout(self.encoder(embedding))
-        lstm_outputs = self.lstm_dropout(self.decoder(lstm_outputs))
-        h2t_outputs, h2h_outputs, t2t_outputs = self.tplinker(lstm_outputs)
+        embedding = self.embedding(input_ids)
+        embedding = self.embedding_dropout(embedding)
+        encoder_outputs, _ = self.encoder(embedding)
+        encoder_outputs = self.lstm_dropout(encoder_outputs)
+        decoder_outputs, _ = self.decoder(encoder_outputs)
+        decoder_outputs = self.lstm_dropout(decoder_outputs)
+        h2t_outputs, h2h_outputs, t2t_outputs = self.tplinker(decoder_outputs)
         return h2t_outputs, h2h_outputs, t2t_outputs
