@@ -42,13 +42,13 @@ class TPLinkerBiLSTM(nn.Module):
         self.embedding_dropout = nn.Dropout(embedding_dropout_rate)
         self.encoder = nn.LSTM(
             kwargs['embedding_size'],
-            encoder_hidden_size//2,
+            encoder_hidden_size // 2,
             num_layers=1,
             bidirectional=True,
             batch_first=True)
         self.decoder = nn.LSTM(
             encoder_hidden_size,
-            deocder_hidden_size//2,
+            deocder_hidden_size // 2,
             num_layers=1,
             bidirectional=True,
             batch_first=True)
