@@ -2,6 +2,7 @@ import json
 import unittest
 
 from preprocessor.truncator import BertExampleTruncator
+from transformers import BertTokenizerFast
 
 
 class TruncatorTest(unittest.TestCase):
@@ -20,9 +21,11 @@ class TruncatorTest(unittest.TestCase):
         return examples
 
     def test_bert_truncator(self):
-        t = BertExampleTruncator('data/bert-base-cased', max_sequence_length=100)
-        examples = self._read_examples(t.tokenizer, nums=1, min_sequence_length=100)
-        truncated_examples = t.truncate(example=examples[0])
+        tokenizer = BertTokenizerFast.from_pretrained(
+            'data/bert-base-cased', add_special_tokens=False, do_lower_case=False)
+        truncator = BertExampleTruncator(tokenizer, max_sequence_length=100)
+        examples = self._read_examples(tokenizer, nums=1, min_sequence_length=100)
+        truncated_examples = truncator.truncate(example=examples[0])
         print('original example: ', examples[0])
         for e in truncated_examples:
             print()

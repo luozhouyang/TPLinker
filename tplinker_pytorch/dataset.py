@@ -14,10 +14,11 @@ class TPLinkerBertDataset(torch.utils.data.Dataset):
                  pretrained_bert_path,
                  rel2id_path,
                  max_sequence_length=100,
-                 batch_size=64,
                  **kwargs):
-        self.bert_truncator = BertExampleTruncator(pretrained_bert_path, max_sequence_length=max_sequence_length)
-        self.tokenizer = self.bert_truncator.tokenizer
+        self.tokenizer = BertTokenizerFast.from_pretrained(
+            pretrained_bert_path, add_special_tokens=False, do_lower_case=False)
+        self.bert_truncator = BertExampleTruncator(
+            self.tokenizer, max_sequence_length=max_sequence_length)
         self.examples = self._read_input_files(input_files)
 
         with open(rel2id_path, mode='rt', encoding='utf-8') as fin:
@@ -25,8 +26,6 @@ class TPLinkerBertDataset(torch.utils.data.Dataset):
         self.tag_mapping = TagMapping(rel2id)
         self.encoder = HandshakingTaggingEncoder(self.tag_mapping)
         self.max_sequence_length = max_sequence_length
-        self.batch_size = batch_size
-        self.index = 0
 
     def _read_input_files(self, input_files):
         if isinstance(input_files, str):

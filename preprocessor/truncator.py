@@ -48,11 +48,10 @@ class AbstractExampleTruncator(abc.ABC):
 
 class BertExampleTruncator(AbstractExampleTruncator):
 
-    def __init__(self, pretrained_bert_path, max_sequence_length=100, **kwargs):
+    def __init__(self, tokenizer: BertTokenizerFast, max_sequence_length: int = 100, **kwargs):
         super().__init__()
         self.max_sequence_length = max_sequence_length
-        self.tokenizer = BertTokenizerFast.from_pretrained(
-            pretrained_bert_path, add_special_tokens=False, do_lower_case=False)
+        self.tokenizer = tokenizer
 
     def truncate(self, example, **kwargs):
         all_examples = []
@@ -65,7 +64,7 @@ class BertExampleTruncator(AbstractExampleTruncator):
         tokens = self.tokenizer.convert_ids_to_tokens(codes['input_ids'])
         offset = codes['offset_mapping']
 
-        for start in range(0, len(tokens), self.max_sequence_length//2):
+        for start in range(0, len(tokens), self.max_sequence_length // 2):
             # do not truncte word pieces
             while str(tokens[start]).startswith('##'):
                 start -= 1
