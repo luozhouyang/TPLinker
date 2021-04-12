@@ -45,6 +45,12 @@ class AbstractExampleTruncator(abc.ABC):
                 })
         return relation_list
 
+    def _adjust_offset_mapping(self, offset_mapping, char_offset, **kwargs):
+        offsets = []
+        for start, end in offset_mapping:
+            offsets.append((start - char_offset, end - char_offset))
+        return offsets
+
 
 class BertExampleTruncator(AbstractExampleTruncator):
 
@@ -59,7 +65,15 @@ class BertExampleTruncator(AbstractExampleTruncator):
         text = example['text']
         codes = self.tokenizer.encode_plus(text, return_offsets_mapping=True, add_special_tokens=False)
         if len(codes['input_ids']) < self.max_sequence_length:
-            return [example]
+            all_examples.append({
+                'text': text,
+                'entity_list': example['entity_list'],
+                'relation_list': example['relation_list'],
+                'offset_mapping': codes['offset_mapping'],
+                'token_offset': 0,
+                'char_offset': 0,
+            })
+            return all_examples
 
         tokens = self.tokenizer.convert_ids_to_tokens(codes['input_ids'])
         offset = codes['offset_mapping']
@@ -68,9 +82,9 @@ class BertExampleTruncator(AbstractExampleTruncator):
             # do not truncte word pieces
             while str(tokens[start]).startswith('##'):
                 start -= 1
-            end = start + self.max_sequence_length
-            char_spans = offset[start: end]
-            char_span = [char_spans[0][0], char_spans[-1][1]]
+            end = min(start + self.max_sequence_length, len(tokens))
+            range_offset_mapping = offset[start: end]
+            char_span = [range_offset_mapping[0][0], range_offset_mapping[-1][1]]
             text_subs = text[char_span[0]:char_span[1]]
 
             token_offset = start
@@ -79,7 +93,10 @@ class BertExampleTruncator(AbstractExampleTruncator):
             all_examples.append({
                 'text': text_subs,
                 'entity_list': self._adjust_entity_list(example, start, end, token_offset, char_offset),
-                'relation_list': self._adjust_relation_list(example, start, end, token_offset, char_offset)
+                'relation_list': self._adjust_relation_list(example, start, end, token_offset, char_offset),
+                'token_offset': token_offset,
+                'char_offset': char_offset,
+                'offset_mapping': self._adjust_offset_mapping(range_offset_mapping, char_offset)
             })
 
         return all_examples
