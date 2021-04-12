@@ -56,8 +56,8 @@ class TPLinkerBertDataset(torch.utils.data.Dataset):
         h2t, h2h, t2t = self.encoder.encode([example], max_sequence_length=self.max_sequence_length)
 
         result = {
-            'input_id': torch.tensor(codes['input_ids']),
-            'attn_mask': torch.tensor(codes['attention_mask']),
+            'input_ids': torch.tensor(codes['input_ids']),
+            'attention_mask': torch.tensor(codes['attention_mask']),
             'token_type_ids': torch.tensor(codes['token_type_ids']),
             'h2t': torch.tensor(h2t[0]),
             'h2h': torch.tensor(h2h[0]),
