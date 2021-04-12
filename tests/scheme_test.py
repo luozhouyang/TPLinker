@@ -16,8 +16,8 @@ class SchemeTest(unittest.TestCase):
         count = 0
         with open('data/tplinker/bert/train_data.jsonl', mode='rt', encoding='utf-8') as fin:
             for line in fin:
-                instance = json.loads(line)
-                h2t, h2h, t2t = encoder.encode([instance], max_sequence_length=100)
+                example = json.loads(line)
+                h2t, h2h, t2t = encoder.encode(example, max_sequence_length=100)
                 print()
                 print(f'h2t shape: {h2t.shape}, h2h shape: {h2h.shape}, t2t shape: {t2t.shape}')
                 print(h2t)
