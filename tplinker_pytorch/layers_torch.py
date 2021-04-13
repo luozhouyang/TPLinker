@@ -127,14 +127,14 @@ class ConcatHandshaking(nn.Module):
 
 class TPLinker(nn.Module):
 
-    def __init__(self, hidden_size, num_relations, max_positions=512, add_dist_embedding=False, **kwargs):
+    def __init__(self, hidden_size, num_relations, max_positions=512, add_distance_embedding=False, **kwargs):
         super().__init__()
         self.handshaking = ConcatHandshaking(hidden_size)
         self.h2t_proj = nn.Linear(hidden_size, 2)
         self.h2h_proj = TaggingProjector(hidden_size, num_relations, name='H2HProjector')
         self.t2t_proj = TaggingProjector(hidden_size, num_relations, name='T2TProjector')
-        self.add_dist_embedding = add_dist_embedding
-        if self.add_dist_embedding:
+        self.add_distance_embedding = add_distance_embedding
+        if self.add_distance_embedding:
             self.distance_embedding = DistanceEmbedding(max_positions, embedding_size=hidden_size)
 
     def forward(self, hidden, **kwargs):
@@ -153,7 +153,7 @@ class TPLinker(nn.Module):
         """
         handshaking_hidden = self.handshaking(hidden)
         h2t_hidden, rel_hidden = handshaking_hidden, handshaking_hidden
-        if self.add_dist_embedding:
+        if self.add_distance_embedding:
             h2t_hidden += self.distance_embedding(hidden)
             rel_hidden += self.distance_embedding(hidden)
         h2t_hidden = self.h2t_proj(h2t_hidden)

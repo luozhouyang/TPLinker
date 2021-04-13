@@ -10,13 +10,13 @@ from .layers_torch import GloveEmbedding, TPLinker
 
 class TPLinkerBert(nn.Module):
 
-    def __init__(self, bert_model_path, num_relations, add_dist_embedding=False, **kwargs):
+    def __init__(self, bert_model_path, num_relations, add_distance_embedding=False, **kwargs):
         super().__init__()
         self.bert = BertModel.from_pretrained(bert_model_path)
         self.tplinker = TPLinker(
             hidden_size=self.bert.config.hidden_size,
             num_relations=num_relations,
-            add_dist_embedding=add_dist_embedding,
+            add_distance_embedding=add_distance_embedding,
             max_positions=512)
 
     def forward(self, inputs, **kwargs):
