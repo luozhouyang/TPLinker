@@ -45,10 +45,13 @@ class AbstractExampleTruncator(abc.ABC):
                 })
         return relation_list
 
-    def _adjust_offset_mapping(self, offset_mapping, char_offset, **kwargs):
+    def _adjust_offset_mapping(self, offset_mapping, char_offset, max_sequence_length=100, **kwargs):
         offsets = []
         for start, end in offset_mapping:
-            offsets.append((start - char_offset, end - char_offset))
+            offsets.append([start - char_offset, end - char_offset])
+        # padding to max_sequence_length to avoid DataLoader runtime error
+        while len(offsets) < max_sequence_length:
+            offsets.append([0, 0])
         return offsets
 
 
@@ -69,7 +72,7 @@ class BertExampleTruncator(AbstractExampleTruncator):
                 'text': text,
                 'entity_list': example['entity_list'],
                 'relation_list': example['relation_list'],
-                'offset_mapping': codes['offset_mapping'],
+                'offset_mapping': self._adjust_offset_mapping(codes['offset_mapping'], 0),
                 'token_offset': 0,
                 'char_offset': 0,
             })
@@ -90,13 +93,14 @@ class BertExampleTruncator(AbstractExampleTruncator):
             token_offset = start
             char_offset = char_span[0]
 
-            all_examples.append({
+            example = {
                 'text': text_subs,
                 'entity_list': self._adjust_entity_list(example, start, end, token_offset, char_offset),
                 'relation_list': self._adjust_relation_list(example, start, end, token_offset, char_offset),
                 'token_offset': token_offset,
                 'char_offset': char_offset,
                 'offset_mapping': self._adjust_offset_mapping(range_offset_mapping, char_offset)
-            })
+            }
+            all_examples.append(example)
 
         return all_examples
