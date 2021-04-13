@@ -19,8 +19,7 @@ class TPLinkerBert(nn.Module):
             add_distance_embedding=add_distance_embedding,
             max_positions=512)
 
-    def forward(self, inputs, **kwargs):
-        input_ids, attn_mask, token_type_ids = inputs
+    def forward(self, input_ids, attn_mask, token_type_ids, **kwargs):
         sequence_output = self.bert(input_ids, attn_mask, token_type_ids)[0]
         h2t_outputs, h2h_outputs, t2t_outputs = self.tplinker(sequence_output)
         return h2t_outputs, h2h_outputs, t2t_outputs
