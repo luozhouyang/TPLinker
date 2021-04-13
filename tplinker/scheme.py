@@ -117,8 +117,8 @@ class HandshakingTaggingEncoder:
             h2h_spots.append(h2h_item)
 
             # add tail-to-tail spot
-            p = subject_span[1] if subject_span[1] <= object_span[1] else object_span[1]
-            q = object_span[1] if subject_span[1] <= object_span[1] else subject_span[1]
+            p = subject_span[1] - 1 if subject_span[1] <= object_span[1] else object_span[1] - 1
+            q = object_span[1] - 1 if subject_span[1] <= object_span[1] else subject_span[1] - 1
             k = 'REL-ST2OT' if subject_span[1] <= object_span[1] else 'REL-OT2ST'
             t2t_item = Tail2TailItem(relid=relid, p=p, q=q, tagid=self.tag_mapping.t2t_id(k))
             t2t_spots.append(t2t_item)
