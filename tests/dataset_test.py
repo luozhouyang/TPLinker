@@ -10,12 +10,11 @@ class DatasetTest(unittest.TestCase):
             input_files=['data/tplinker/bert/valid_data.jsonl'],
             pretrained_bert_path='data/bert-base-cased',
             rel2id_path='data/tplinker/bert/rel2id.json',
-            max_sequence_length=100,
-            batch_size=2)
+            max_sequence_length=100)
 
-        dl = torch.utils.data.DataLoader(ds, batch_size=2)
+        dl = torch.utils.data.DataLoader(ds, batch_size=2, drop_last=True)
         for idx, d in enumerate(dl):
-            if idx == 2:
+            if idx == 10:
                 break
             print()
             print(d)
