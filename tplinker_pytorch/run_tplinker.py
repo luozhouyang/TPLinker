@@ -8,6 +8,7 @@ from pytorch_lightning.callbacks import (Callback, EarlyStopping,
                                          ModelCheckpoint)
 
 from .dataset import TPLinkerBertDataset
+from .metrics import F1, Precision, Recall, SampleAccuracy
 from .models_torch import TPLinkerBert
 
 
@@ -48,6 +49,12 @@ class TPLinkerLightning(pl.LightningModule):
     def __init__(self, model, **kwargs):
         super().__init__(**kwargs)
         self.model = model
+        self.h2t_acc = SampleAccuracy()
+        self.h2h_acc = SampleAccuracy()
+        self.t2t_acc = SampleAccuracy()
+        self.train_precision = Precision('data/tplinker/bert/rel2id.json', max_sequence_length=100)
+        self.train_recll = Recall('data/tplinker/bert/rel2id.json', max_sequence_length=100)
+        self.train_f1 = F1('data/tplinker/bert/rel2id.json', max_sequence_length=100)
 
     def forward(self, input_ids, attention_mask, token_type_ids, **kwargs):
         h2t, h2h, t2t = self.model(input_ids, attention_mask, token_type_ids)
@@ -76,7 +83,19 @@ class TPLinkerLightning(pl.LightningModule):
         h2h_loss = _compute_loss(h2h_pred, batch['h2h'])
         t2t_loss = _compute_loss(t2t_pred, batch['t2t'])
         total_loss = 0.333 * h2t_loss + 0.333 * h2h_loss + 0.333 * t2t_loss
-        logs = {'h2t_loss': h2t_loss, 'h2h_loss': h2h_loss, 't2t_loss': t2t_loss, 'loss': total_loss}
+        # logs = {'h2t_loss': h2t_loss, 'h2h_loss': h2h_loss, 't2t_loss': t2t_loss, 'loss': total_loss}
+        logs = {
+            'loss': total_loss,
+        }
+        # TODO: Fixed metrics
+        if self.trainer.current_epoch > 1:
+            preds = {'h2t': h2t_pred, 'h2h': h2h_pred, 't2t': t2t_pred}
+            target = {'example': batch['example']}
+            logs.update({
+                'precision': self.train_precision(preds, target),
+                'recall': self.train_recll(preds, target),
+                'f1': self.train_f1(preds, target)
+            })
         self.log_dict(logs, prog_bar=True, on_step=True, on_epoch=False)
         return total_loss
 
@@ -96,9 +115,9 @@ class TPLinkerLightning(pl.LightningModule):
         return opt
 
 
-def create_trainer(model_path='model/', gpus=1, **kwargs):
+def create_trainer(model_path='model/', gpus=0, **kwargs):
     trainer = pl.Trainer(
-        gpus=1,
+        gpus=gpus,
         default_root_dir=model_path,
         callbacks=[
             ModelCheckpoint(
