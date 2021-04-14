@@ -40,7 +40,7 @@ class TagMapping:
         return self.relation2id.get(key, None)
 
     def relation_tag(self, _id):
-        return self.id2relations.get(_id, None)
+        return self.id2relation.get(_id, None)
 
     def h2t_id(self, key):
         return self.head2tail_tag2id.get(key, None)
@@ -173,7 +173,7 @@ class HandshakingTaggingDecoder:
         # e.g [(0, 0), (0, 1), (0, 2), (1, 1), (1, 2), (2, 2)]
         index_matrix = [(i, j) for i in range(max_sequence_length) for j in list(range(max_sequence_length))[i:]]
         # decode predictions
-        h2t_spots = self._decode_head2tail(h2t_pred, index_matrix)
+        h2t_spots = self._decode_head2tail(h2t_pred, index_matrix, example)
         h2h_spots = self._decode_head2head(h2h_pred, index_matrix)
         t2t_spots = self._decode_tail2tail(t2t_pred, index_matrix)
 
@@ -206,8 +206,8 @@ class HandshakingTaggingDecoder:
         items = []
         # shape: (1+2+...+seq_len)
         h2t_pred = torch.argmax(h2t_pred, dim=-1)
-        for index in h2t_pred.nonzero():
-            flat_index = index[0].items()
+        for index in torch.nonzero(h2t_pred):
+            flat_index = index[0].item()
             matrix_ind = index_matrix[flat_index]
             item = Head2TailItem(p=matrix_ind[0], q=matrix_ind[1], tagid=h2t_pred[flat_index])
             items.append(item)
@@ -244,12 +244,12 @@ class HandshakingTaggingDecoder:
         items = []
         # shape: (num_relations, 1+2+...+seq_len)
         h2h_pred = torch.argmax(h2h_pred, dim=-1)
-        for index in h2h_pred.nonzero():
+        for index in torch.nonzero(h2h_pred):
             relation_id, flat_index = index[0].item(), index[1].item()
             matrix_index = index_maxtrix[flat_index]
             item = Head2HeadItem(
                 relid=relation_id, p=matrix_index[0], q=matrix_index[1],
-                tagid=h2h_pred[relation_id][flat_index].items())
+                tagid=h2h_pred[relation_id][flat_index].item())
             items.append(item)
         return items
 
@@ -276,7 +276,7 @@ class HandshakingTaggingDecoder:
                     relations.append({
                         'subject': subj['text'],
                         'object': obj['text'],
-                        'subj_tok_span': [subj['token_span'][0] + token_offset, subj['tok_span'][1] + token_offset],
+                        'subj_tok_span': [subj['tok_span'][0] + token_offset, subj['tok_span'][1] + token_offset],
                         'subj_char_span': [subj['char_span'][0] + char_offset, subj['char_span'][1] + char_offset],
                         'obj_tok_span': [obj['tok_span'][0] + token_offset, obj['tok_span'][1] + token_offset],
                         'obj_char_span': [obj['char_span'][0] + char_offset, obj['char_span'][1] + char_offset],
@@ -296,12 +296,12 @@ class HandshakingTaggingDecoder:
         """
         items = []
         t2t_pred = torch.argmax(t2t_pred, dim=-1)
-        for index in t2t_pred.nonzero():
+        for index in torch.nonzero(t2t_pred):
             relation_id, flat_index = index[0].item(), index[1].item()
             matrix_index = index_matrix[flat_index]
             item = Tail2TailItem(
                 relid=relation_id, p=matrix_index[0], q=matrix_index[1],
-                tagid=t2t_pred[relation_id][flat_index])
+                tagid=t2t_pred[relation_id][flat_index].item())
             items.append(item)
         return items
 
