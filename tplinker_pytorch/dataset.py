@@ -2,9 +2,10 @@ import json
 import os
 
 import torch
-from preprocessor.truncator import BertExampleTruncator
 from tplinker.scheme import HandshakingTaggingEncoder, TagMapping
 from transformers import BertTokenizerFast
+
+from .truncator import BertExampleTruncator
 
 
 class TPLinkerBertDataset(torch.utils.data.Dataset):

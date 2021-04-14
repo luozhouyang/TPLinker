@@ -1,7 +1,7 @@
 import json
 import unittest
 
-from preprocessor.truncator import BertExampleTruncator
+from tplinker_pytorch.truncator import BertExampleTruncator
 from transformers import BertTokenizerFast
 
 
