@@ -1,3 +1,2 @@
-tensorflow
-transformers-keras
 glove-python-binary==0.2.0
+pytorch-lightning
