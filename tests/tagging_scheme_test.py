@@ -2,8 +2,7 @@ import json
 import unittest
 
 import numpy as np
-from tplinker_pytorch.tagging_scheme import (HandshakingTaggingEncoder,
-                                             TagMapping)
+from tplinker.tagging_scheme import HandshakingTaggingEncoder, TagMapping
 
 
 class SchemeTest(unittest.TestCase):

@@ -2,9 +2,8 @@ import unittest
 
 import numpy as np
 import torch
-from tplinker_pytorch.layers_torch import (ConcatHandshaking,
-                                           DistanceEmbedding, GloveEmbedding,
-                                           TaggingProjector, TPLinker)
+from tplinker.layers_torch import (ConcatHandshaking, DistanceEmbedding,
+                                   GloveEmbedding, TaggingProjector, TPLinker)
 
 
 class LayersTest(unittest.TestCase):

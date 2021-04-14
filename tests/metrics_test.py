@@ -1,6 +1,6 @@
 import unittest
 
-from tplinker_pytorch.metrics import F1, Precision, Recall, SampleAccuracy
+from tplinker.metrics import F1, Precision, Recall, SampleAccuracy
 
 
 class MetricsTest(unittest.TestCase):

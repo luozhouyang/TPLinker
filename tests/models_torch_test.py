@@ -1,7 +1,7 @@
 import unittest
 
 import torch
-from tplinker_pytorch.models_torch import TPLinkerBert, TPLinkerBiLSTM
+from tplinker.models_torch import TPLinkerBert, TPLinkerBiLSTM
 from transformers import BertTokenizerFast
 
 

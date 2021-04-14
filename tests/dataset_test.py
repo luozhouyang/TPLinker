@@ -1,6 +1,7 @@
 import unittest
+
 import torch
-from tplinker_pytorch.dataset import TPLinkerBertDataset
+from tplinker.dataset import TPLinkerBertDataset
 
 
 class DatasetTest(unittest.TestCase):
