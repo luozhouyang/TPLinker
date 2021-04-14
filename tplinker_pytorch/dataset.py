@@ -55,15 +55,12 @@ class TPLinkerBertDataset(torch.utils.data.Dataset):
         h2t, h2h, t2t = self.encoder.encode(example, max_sequence_length=self.max_sequence_length)
 
         item = {
-            'text': example['text'],
+            'example': json.dumps(example, ensure_ascii=False),  # raw contents used to compute metrics
             'input_ids': torch.tensor(codes['input_ids']),
             'attention_mask': torch.tensor(codes['attention_mask']),
             'token_type_ids': torch.tensor(codes['token_type_ids']),
             'h2t': torch.tensor(h2t),
             'h2h': torch.tensor(h2h),
             't2t': torch.tensor(t2t),
-            'offset_mapping': torch.tensor(example['offset_mapping']),
-            'token_offset': example['token_offset'],
-            'char_offset': example['char_offset'],
         }
         return item
