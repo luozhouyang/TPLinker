@@ -3,7 +3,9 @@ import json
 import pytorch_lightning as pl
 import torch
 from torchmetrics import Metric
-from tplinker.scheme import HandshakingTaggingDecoder, TagMapping
+
+from tplinker_pytorch.tagging_scheme import (HandshakingTaggingDecoder,
+                                             TagMapping)
 
 
 class SampleAccuracy(Metric):

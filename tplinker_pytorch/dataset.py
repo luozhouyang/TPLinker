@@ -2,8 +2,10 @@ import json
 import os
 
 import torch
-from tplinker.scheme import HandshakingTaggingEncoder, TagMapping
 from transformers import BertTokenizerFast
+
+from tplinker_pytorch.tagging_scheme import (HandshakingTaggingEncoder,
+                                             TagMapping)
 
 from .truncator import BertExampleTruncator
 
