@@ -10,9 +10,19 @@
 
 ## 训练数据
 
-整理好的NYT数据集下载：[NYT]()
+整理好的NYT数据集下载：[NYT](https://huaichen-oss.oss-cn-hangzhou.aliyuncs.com/public/tplinker-bert-nyt.zip?versionId=CAEQDxiBgMCKm83SxhciIDFmNmY1OGZiMzc0YzRhMDY4ODBmZTEyNDhlOTJmYTg3)
 
 > 下载之后解压，放到当前项目的 `data/` 目录下。
+
+也可以用下述命令下载：
+```bash
+mkdir data && cd data
+wget -O tplinker-bert-nyt.zip https://huaichen-oss.oss-cn-hangzhou.aliyuncs.com/public/tplinker-bert-nyt.zip?versionId=CAEQDxiBgMCKm83SxhciIDFmNmY1OGZiMzc0YzRhMDY4ODBmZTEyNDhlOTJmYTg3
+
+unzip tplinker-bert-nyt.zip
+
+```
+
 
 训练数据格式如下：
 
