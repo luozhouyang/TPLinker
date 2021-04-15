@@ -16,11 +16,12 @@ class TPLinkerBertDataset(torch.utils.data.Dataset):
                  pretrained_bert_path,
                  rel2id_path,
                  max_sequence_length=100,
+                 window_size=50,
                  **kwargs):
         self.tokenizer = BertTokenizerFast.from_pretrained(
             pretrained_bert_path, add_special_tokens=False, do_lower_case=False)
         self.bert_truncator = BertExampleTruncator(
-            self.tokenizer, max_sequence_length=max_sequence_length)
+            self.tokenizer, max_sequence_length=max_sequence_length, window_size=window_size)
         self.examples = self._read_input_files(input_files)
 
         with open(rel2id_path, mode='rt', encoding='utf-8') as fin:

@@ -57,9 +57,10 @@ class AbstractExampleTruncator(abc.ABC):
 
 class BertExampleTruncator(AbstractExampleTruncator):
 
-    def __init__(self, tokenizer: BertTokenizerFast, max_sequence_length: int = 100, **kwargs):
+    def __init__(self, tokenizer: BertTokenizerFast, max_sequence_length=100, window_size=50, **kwargs):
         super().__init__()
         self.max_sequence_length = max_sequence_length
+        self.window_size = window_size
         self.tokenizer = tokenizer
 
     def truncate(self, example, **kwargs):
@@ -81,7 +82,7 @@ class BertExampleTruncator(AbstractExampleTruncator):
         tokens = self.tokenizer.convert_ids_to_tokens(codes['input_ids'])
         offset = codes['offset_mapping']
 
-        for start in range(0, len(tokens), self.max_sequence_length // 2):
+        for start in range(0, len(tokens), self.window_size):
             # do not truncte word pieces
             while str(tokens[start]).startswith('##'):
                 start -= 1
@@ -93,7 +94,7 @@ class BertExampleTruncator(AbstractExampleTruncator):
             token_offset = start
             char_offset = char_span[0]
 
-            example = {
+            truncated_example = {
                 'text': text_subs,
                 'entity_list': self._adjust_entity_list(example, start, end, token_offset, char_offset),
                 'relation_list': self._adjust_relation_list(example, start, end, token_offset, char_offset),
@@ -101,6 +102,9 @@ class BertExampleTruncator(AbstractExampleTruncator):
                 'char_offset': char_offset,
                 'offset_mapping': self._adjust_offset_mapping(range_offset_mapping, char_offset)
             }
-            all_examples.append(example)
+            all_examples.append(truncated_example)
+
+            if end > len(tokens):
+                break
 
         return all_examples
