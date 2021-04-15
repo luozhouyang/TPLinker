@@ -20,7 +20,7 @@ class ModelsTest(unittest.TestCase):
         segment_ids = torch.tensor([segment_ids], dtype=torch.long)
         flat_seq_len = seq_len * (seq_len + 1) // 2
 
-        h2t, h2h, t2t = m(inputs=(input_ids, attn_mask, segment_ids))
+        h2t, h2h, t2t = m(input_ids, attn_mask, segment_ids)
         self.assertEqual([1, flat_seq_len, 2], list(h2t.size()))
         self.assertEqual([1, 24, flat_seq_len, 3], list(h2h.size()))
         self.assertEqual([1, 24, flat_seq_len, 3], list(t2t.size()))

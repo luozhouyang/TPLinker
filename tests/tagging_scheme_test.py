@@ -44,23 +44,16 @@ class SchemeTest(unittest.TestCase):
 
     def test_handshaking_tagging_encoder(self):
         encoder = self._build_encoder()
-
-        count = 0
-        with open('data/tplinker/bert/train_data.jsonl', mode='rt', encoding='utf-8') as fin:
-            for line in fin:
-                example = json.loads(line)
-                print()
-                print('example: {}'.format(example))
-                h2t, h2h, t2t = encoder.encode(example, max_sequence_length=100)
-                print(f'h2t shape: {h2t.shape}, h2h shape: {h2h.shape}, t2t shape: {t2t.shape}')
-                # print(h2t)
-                # print(np.sum(h2t))
-                # print(h2h)
-                # print(t2t)
-
-                count += 1
-                if count == 100:
-                    break
+        truncator, _ = self._build_truncator()
+        examples = self._read_example(limit=100)
+        truncated_examples = []
+        for example in examples:
+            truncated_examples.extend(truncator.truncate(example))
+        for example in truncated_examples:
+            print()
+            print('example: {}'.format(example))
+            h2t, h2h, t2t = encoder.encode(example, max_sequence_length=100)
+            print(f'h2t shape: {h2t.shape}, h2h shape: {h2h.shape}, t2t shape: {t2t.shape}')
 
     def test_handshaking_tagging_ecoder_example(self):
         example = {
