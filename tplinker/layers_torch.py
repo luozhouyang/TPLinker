@@ -72,7 +72,7 @@ class DistanceEmbedding(nn.Module):
 
 class TaggingProjector(nn.Module):
 
-    def __init__(self, hidden_size, num_relations, name='TaggingProjector', **kwargs):
+    def __init__(self, hidden_size, num_relations, name='proj', **kwargs):
         super().__init__()
         self.name = name
         self.fc_layers = [nn.Linear(hidden_size, 3) for _ in range(num_relations)]
@@ -93,6 +93,7 @@ class TaggingProjector(nn.Module):
         for fc in self.fc_layers:
             outputs.append(fc(hidden))
         outputs = torch.stack(outputs, dim=1)
+        outputs = torch.softmax(outputs, dim=-1)
         return outputs
 
 
@@ -131,8 +132,8 @@ class TPLinker(nn.Module):
         super().__init__()
         self.handshaking = ConcatHandshaking(hidden_size)
         self.h2t_proj = nn.Linear(hidden_size, 2)
-        self.h2h_proj = TaggingProjector(hidden_size, num_relations, name='H2HProjector')
-        self.t2t_proj = TaggingProjector(hidden_size, num_relations, name='T2TProjector')
+        self.h2h_proj = TaggingProjector(hidden_size, num_relations, name='h2hproj')
+        self.t2t_proj = TaggingProjector(hidden_size, num_relations, name='t2tproj')
         self.add_distance_embedding = add_distance_embedding
         if self.add_distance_embedding:
             self.distance_embedding = DistanceEmbedding(max_positions, embedding_size=hidden_size)
