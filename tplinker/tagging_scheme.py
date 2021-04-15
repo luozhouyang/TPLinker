@@ -173,12 +173,12 @@ class HandshakingTaggingDecoder:
         # e.g [(0, 0), (0, 1), (0, 2), (1, 1), (1, 2), (2, 2)]
         index_matrix = [(i, j) for i in range(max_sequence_length) for j in list(range(max_sequence_length))[i:]]
         # decode predictions
-        h2t_spots = self._decode_head2tail(h2t_pred, index_matrix, example)
+        h2t_spots = self._decode_head2tail(h2t_pred, index_matrix)
         h2h_spots = self._decode_head2head(h2h_pred, index_matrix)
         t2t_spots = self._decode_tail2tail(t2t_pred, index_matrix)
 
-        entities_head_map = self._parse_entities(h2h_spots, example)
-        relation_tails = self._parse_relation_tails(t2t_spots)
+        entities_head_map = self._parse_entities(h2t_spots, example)
+        relation_tails = self._parse_tails(t2t_spots)
         relations = self._parse_relations(
             h2h_spots, entities_head_map, relation_tails,
             token_offset=example['token_offset'], char_offset=example['char_offset'])
@@ -193,7 +193,7 @@ class HandshakingTaggingDecoder:
             batch_relations.append(relations)
         return batch_relations
 
-    def _decode_head2tail(self, h2t_pred, index_matrix, example):
+    def _decode_head2tail(self, h2t_pred, index_matrix):
         """Decode head2tail tagging.
 
         Args:
@@ -209,13 +209,13 @@ class HandshakingTaggingDecoder:
         for index in torch.nonzero(h2t_pred):
             flat_index = index[0].item()
             matrix_ind = index_matrix[flat_index]
-            item = Head2TailItem(p=matrix_ind[0], q=matrix_ind[1], tagid=h2t_pred[flat_index])
+            item = Head2TailItem(p=matrix_ind[0], q=matrix_ind[1], tagid=h2t_pred[flat_index].item())
             items.append(item)
         return items
 
-    def _parse_entities(self, items, example):
+    def _parse_entities(self, h2t_items, example):
         entities_head_map = {}
-        for item in items:
+        for item in h2t_items:
             if item.tagid != self.tag_mapping.h2t_id('ENT-H2T'):
                 continue
             char_offset_list = example['offset_mapping'][item.p: item.q + 1]
@@ -226,7 +226,7 @@ class HandshakingTaggingDecoder:
                 entities_head_map[head] = []
             entities_head_map[head].append({
                 'text': entity_txt,
-                'tok_span': [item.p, item.q + 1],
+                'tok_span': [item.p, item.q],
                 'char_span': char_span,
             })
         return entities_head_map
@@ -270,16 +270,16 @@ class HandshakingTaggingDecoder:
             obj_list = entities_head_map[obj_head]
             for subj in subj_list:
                 for obj in obj_list:
-                    tail = '{}-{}-{}'.format(item.relid, subj['tok_span'][1] - 1, obj['tok_span'][1] - 1)
+                    tail = '{}-{}-{}'.format(item.relid, subj['tok_span'][1], obj['tok_span'][1])
                     if tail not in relation_tails:
                         continue
                     relations.append({
                         'subject': subj['text'],
                         'object': obj['text'],
-                        'subj_tok_span': [subj['tok_span'][0] + token_offset, subj['tok_span'][1] + token_offset],
-                        'subj_char_span': [subj['char_span'][0] + char_offset, subj['char_span'][1] + char_offset],
-                        'obj_tok_span': [obj['tok_span'][0] + token_offset, obj['tok_span'][1] + token_offset],
-                        'obj_char_span': [obj['char_span'][0] + char_offset, obj['char_span'][1] + char_offset],
+                        'subj_tok_span': [subj['tok_span'][0] + token_offset, subj['tok_span'][1] + token_offset + 1],
+                        'subj_char_span': [subj['char_span'][0] + char_offset, subj['char_span'][1] + char_offset + 1],
+                        'obj_tok_span': [obj['tok_span'][0] + token_offset, obj['tok_span'][1] + token_offset + 1],
+                        'obj_char_span': [obj['char_span'][0] + char_offset, obj['char_span'][1] + char_offset + 1],
                         'predicate': self.tag_mapping.relation_tag(item.relid),
                     })
         return relations
@@ -305,9 +305,9 @@ class HandshakingTaggingDecoder:
             items.append(item)
         return items
 
-    def _parse_relation_tails(self, items):
+    def _parse_tails(self, t2t_items):
         tails = set()
-        for item in items:
+        for item in t2t_items:
             if item.tagid == self.tag_mapping.t2t_id('REL-ST2OT'):
                 tails.add('{}-{}-{}'.format(item.relid, item.p, item.q))
             elif item.tagid == self.tag_mapping.t2t_id('REL-OT2ST'):

@@ -2,7 +2,12 @@ import json
 import unittest
 
 import numpy as np
-from tplinker.tagging_scheme import HandshakingTaggingEncoder, TagMapping
+import torch
+import torch.nn.functional as F
+from tplinker.tagging_scheme import (HandshakingTaggingDecoder,
+                                     HandshakingTaggingEncoder, TagMapping)
+from tplinker.truncator import BertExampleTruncator
+from transformers import BertTokenizerFast
 
 
 class SchemeTest(unittest.TestCase):
@@ -13,6 +18,29 @@ class SchemeTest(unittest.TestCase):
         tm = TagMapping(relation2id=rel2id)
         encoder = HandshakingTaggingEncoder(tag_mapping=tm)
         return encoder
+
+    def _build_decoder(self):
+        with open('data/tplinker/bert/rel2id.json', mode='rt', encoding='utf-8') as fin:
+            rel2id = json.load(fin)
+        tm = TagMapping(relation2id=rel2id)
+        decoder = HandshakingTaggingDecoder(tag_mapping=tm)
+        return decoder
+
+    def _build_truncator(self):
+        tokenizer = BertTokenizerFast.from_pretrained(
+            'data/bert-base-cased', add_special_tokens=False, do_lower_case=False)
+        truncator = BertExampleTruncator(tokenizer, max_sequence_length=100, window_size=50)
+        return truncator, tokenizer
+
+    def _read_example(self, limit=1):
+        examples = []
+        with open('data/tplinker/bert/valid_data.jsonl', mode='rt', encoding='utf-8') as fin:
+            for line in fin:
+                example = json.loads(line)
+                examples.append(example)
+                if len(examples) == limit:
+                    break
+        return examples
 
     def test_handshaking_tagging_encoder(self):
         encoder = self._build_encoder()
@@ -45,7 +73,26 @@ class SchemeTest(unittest.TestCase):
         encoder = self._build_encoder()
 
         outputs = encoder.encode(example)
+        print(np.sum(outputs[0]))
+        print(np.sum(outputs[1]))
+        print(np.sum(outputs[2]))
         print(outputs)
+
+    def test_handshaking_decoder_example(self):
+        truncator, _ = self._build_truncator()
+        truncated_examples = []
+        for e in self._read_example():
+            truncated_examples.extend(truncator.truncate(e))
+        encoder = self._build_encoder()
+        example = truncated_examples[0]
+        print(example['relation_list'])
+        h2t, h2h, t2t = encoder.encode(example, max_sequence_length=100)
+        decoder = self._build_decoder()
+        h2t_pred = F.one_hot(torch.tensor(h2t), num_classes=2)
+        h2h_pred = F.one_hot(torch.tensor(h2h), num_classes=3)
+        t2t_pred = F.one_hot(torch.tensor(t2t), num_classes=3)
+        relations = decoder.decode(example, h2t_pred, h2h_pred, t2t_pred, max_sequence_length=100)
+        print(relations)
 
 
 if __name__ == "__main__":
