@@ -37,41 +37,24 @@ class SampleAccuracy(Metric):
 class _PRF(Metric):
     """Precision, Recall and F1 metric"""
 
-    def __init__(self, rel2id_path, max_sequence_length=100, pattern='only_head_text', epsilon=1e-12):
+    def __init__(self, pattern='only_head_text', epsilon=1e-12):
         super().__init__()
         self.pattern = pattern
-        self.max_sequence_length = max_sequence_length
         self.epsilon = epsilon
 
         self.add_state('correct', default=torch.tensor(0), dist_reduce_fx='sum')
         self.add_state('goldnum', default=torch.tensor(0), dist_reduce_fx='sum')
         self.add_state('prednum', default=torch.tensor(0), dist_reduce_fx='sum')
 
-        with open(rel2id_path, mode='rt', encoding='utf-8') as fin:
-            rel2id = json.load(fin)
-        tag_mapping = TagMapping(rel2id)
-        self.decoder = HandshakingTaggingDecoder(tag_mapping)
-
-    def update(self, preds, target):
-        examples = [json.loads(e) for e in target['example']]
-        pred_h2t, pred_h2h, pred_t2t = preds['h2t'], preds['h2h'], preds['t2t']
-
-        for index in range(len(examples)):
-            # print('process No.{} example'.format(index))
-            self._count(examples[index], pred_h2t[index], pred_h2h[index], pred_t2t[index])
-
-    def _count(self, example, h2t_pred, h2h_pred, t2t_pred):
-        pred_relations = self.decoder.decode(
-            example, h2t_pred, h2h_pred, t2t_pred,
-            max_sequence_length=self.max_sequence_length)
-        gold_relations = example['relation_list']
-
-        pred_relations_set, gold_relations_set = self._parse_relations_set(pred_relations, gold_relations)
-        for rel in pred_relations_set:
-            if rel in gold_relations_set:
-                self.correct += 1
-        self.goldnum += len(gold_relations_set)
-        self.prednum += len(pred_relations_set)
+    def update(self, pred_relations, gold_relations):
+        for pred, gold in zip(pred_relations, gold_relations):
+            pred_set, gold_set = self._parse_relations_set(pred, gold)
+            for rel in pred_set:
+                if rel in gold_set:
+                    self.correct += 1
+            self.prednum += len(pred_set)
+            self.goldnum += len(gold_set)
+        # print('metric states: correct={}, prednum={}, goldnum={}'.format(self.correct, self.prednum, self.goldnum))
 
     def _parse_relations_set(self, pred_relations, gold_relations):
         if self.pattern == 'whole_span':
