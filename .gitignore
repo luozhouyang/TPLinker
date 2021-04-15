@@ -1,4 +1,6 @@
 data
+log
+*.log
 .vscode
 .idea
 *.pyc
